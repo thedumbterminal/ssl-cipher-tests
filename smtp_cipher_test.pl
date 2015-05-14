@@ -5,21 +5,29 @@ use warnings;
 use 5.010;
 use Net::SMTP;
 use IO::Socket::SSL;
-use List::MoreUtils qw(uniq);
+use List::MoreUtils qw(uniq any);
 $|=1;
-my @protocols = ('SSLv2', 'SSLv3', 'TLSv1');
-my @ciphers;
+my @availableProtocols = ('SSLv2', 'SSLv3', 'TLSv1');
+my @availableCiphers;
 if(open(CIPHERS, "openssl ciphers|")){
 	my $cipherLine = <CIPHERS>;
 	close(CIPHERS);
 	chomp $cipherLine;
-	@ciphers = uniq(split(/\:/, $cipherLine));
+	@availableCiphers = uniq(split(/\:/, $cipherLine));
 }
 
-die "Usage $0: <host> <port>\n" unless $#ARGV == 1;
+die "Usage $0: <host> <port> [SSLv2|SSLv3|TLSv1] [cipher]\n" unless $#ARGV >= 1;
 
 my $server = $ARGV[0];
 my $port = $ARGV[1];
+my $proto = $ARGV[2];
+my $cipher = $ARGV[3];
+my @protocols = @availableProtocols;
+
+@protocols = ($proto) if $proto and any {$_ eq $proto} @availableProtocols;
+
+my @ciphers = @availableCiphers;
+@ciphers = ($cipher) if $cipher;
 
 say "Testing $server:$port";
 
